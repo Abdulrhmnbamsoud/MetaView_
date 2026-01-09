@@ -1,15 +1,16 @@
 
-import { Article, HealthStatus, SearchParams, DashboardMetrics, SentimentResult, ComparisonResult, TranslationResult } from '../types';
+import { Article, HealthStatus, SearchParams, SentimentResult, ComparisonResult, TranslationResult } from '../types';
 import { GoogleGenAI, Type } from "@google/genai";
 
 const BASE_URL = 'https://metaview-api-production.up.railway.app';
 
+// وظيفة تنظيف مخرجات الـ AI لضمان JSON صالح
 const cleanJson = (text: string) => {
   try {
     const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
     return JSON.parse(cleaned);
   } catch (e) {
-    console.error("JSON Cleanup Error:", e);
+    console.error("MetaView AI Parse Error:", e);
     return null;
   }
 };
@@ -27,15 +28,13 @@ export const apiService = {
 
   async clusterArticles(articles: Article[]): Promise<{title: string, articleUrls: string[], summary?: string}[]> {
     if (articles.length < 2) return [];
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const inputData = articles.slice(0, 30).map(a => ({ url: a.url, headline: a.headline }));
     
     try {
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: `أنت محرك MetaView للتحليل الجيوسياسي. قم بتجميع الأخبار التالية في مجموعات موضوعية ذكية. 
-        أرجع النتيجة بصيغة JSON فقط كقائمة من الكائنات تحتوي على (title, articleUrls, summary).
-        البيانات: ${JSON.stringify(inputData)}`,
+        contents: `أنت خبير تصنيف MetaView. قم بتجميع هذه الأخبار في مجموعات موضوعية. أرجع JSON فقط. البيانات: ${JSON.stringify(inputData)}`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {
@@ -53,21 +52,17 @@ export const apiService = {
         }
       });
       return cleanJson(response.text) || [];
-    } catch (err) {
-      return [];
-    }
+    } catch { return []; }
   },
 
   async getStrategicSummary(articles: Article[]): Promise<{summary: string, metrics: {category: string, value: number}[], key_takeaways: string[]}> {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const headlines = articles.slice(0, 40).map(a => a.headline).join('\n');
     
     try {
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: `قم بتحليل المشهد الإخباري الحالي لمنصة MetaView بناءً على العناوين التالية.
-        استخلص ملخصاً استراتيجياً، و5 مقاييس أساسية (الاستقرار، الاقتصاد، الأمن، التقنية، التأثير الدولي) من 0-100.
-        العناوين:\n${headlines}`,
+        contents: `تحليل استراتيجي لـ MetaView بناءً على العناوين:\n${headlines}`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {
@@ -78,10 +73,7 @@ export const apiService = {
                 type: Type.ARRAY,
                 items: {
                   type: Type.OBJECT,
-                  properties: {
-                    category: { type: Type.STRING },
-                    value: { type: Type.NUMBER }
-                  },
+                  properties: { category: { type: Type.STRING }, value: { type: Type.NUMBER } },
                   required: ["category", "value"]
                 }
               },
@@ -92,23 +84,21 @@ export const apiService = {
         }
       });
       return cleanJson(response.text) || { summary: "", metrics: [], key_takeaways: [] };
-    } catch (err) {
-      return { summary: "عذراً، فشل محرك التحليل في الاستجابة.", metrics: [], key_takeaways: [] };
-    }
+    } catch { return { summary: "فشل التحليل الاستراتيجي.", metrics: [], key_takeaways: [] }; }
   },
 
   async analyzeSentiment(text: string): Promise<SentimentResult> {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     try {
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: `حلل نبرة النص التالي لـ MetaView وأعطِ تفسيراً موجزاً: "${text}"`,
+        contents: `حلل مشاعر النص التالي لـ MetaView: "${text}"`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
             properties: { 
-              label: { type: Type.STRING, enum: ["positive", "neutral", "negative"] }, 
+              label: { type: Type.STRING }, 
               score: { type: Type.NUMBER },
               explanation: { type: Type.STRING }
             },
@@ -116,9 +106,14 @@ export const apiService = {
           }
         }
       });
-      return cleanJson(response.text) || { label: "neutral", score: 0.5 };
+      const result = cleanJson(response.text);
+      return {
+        label: result?.label || 'neutral',
+        score: result?.score || 0.5,
+        explanation: result?.explanation || 'لم يتم استخراج تفسير.'
+      };
     } catch {
-      return { label: "neutral", score: 0.5 };
+      return { label: "neutral", score: 0.5, explanation: 'حدث خطأ أثناء التحليل.' };
     }
   },
 
@@ -137,42 +132,37 @@ export const apiService = {
     try {
       const response = await fetch(`${BASE_URL}${endpoint}?${queryParams.toString()}`);
       const data = await response.json();
-      // Handle different API response formats
       const articles = data.articles || data.results || (Array.isArray(data) ? data : []);
       return articles.map((a: any) => ({
         ...a,
-        published_at: a.published_at || 'التاريخ غير متوفر',
-        source: a.source || 'مصدر غير معروف',
-        article_summary: a.article_summary || a.content?.substring(0, 150) || 'لا يوجد ملخص'
+        published_at: a.published_at || 'قيد المعالجة',
+        source: a.source || 'MetaView Node',
+        article_summary: a.article_summary || a.content?.substring(0, 150) || 'لا يوجد ملخص متاح.'
       }));
-    } catch (err) { 
-      return []; 
-    }
+    } catch { return []; }
   },
 
   async translateText(text: string, targetLanguage: 'Arabic' | 'English'): Promise<TranslationResult> {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     try {
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: `ترجم النص التالي إلى ${targetLanguage}: "${text}"`,
+        contents: `ترجم النص التالي لـ MetaView إلى ${targetLanguage}: "${text}"`,
         config: {
           responseMimeType: "application/json",
           responseSchema: { type: Type.OBJECT, properties: { translated_text: { type: Type.STRING } }, required: ["translated_text"] }
         }
       });
       return cleanJson(response.text) || { translated_text: text };
-    } catch {
-      return { translated_text: "فشلت الترجمة." };
-    }
+    } catch { return { translated_text: text }; }
   },
 
   async compareArticles(text1: string, text2: string): Promise<ComparisonResult> {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     try {
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: `قارن بين هذين الخبرين استراتيجياً لـ MetaView:\n1: ${text1}\n2: ${text2}`,
+        contents: `قارن استراتيجياً بين:\n1: ${text1}\n2: ${text2}`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {
@@ -187,18 +177,16 @@ export const apiService = {
         }
       });
       return cleanJson(response.text) || { similarity: 0, insights: "", differences: [] };
-    } catch {
-      return { similarity: 0, insights: "خطأ في المقارنة", differences: [] };
-    }
+    } catch { return { similarity: 0, insights: "خطأ في المقارنة", differences: [] }; }
   },
 
   async detectEditorialBias(articles: Article[]): Promise<any[]> {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const sample = articles.slice(0, 10).map(a => ({ source: a.source, headline: a.headline }));
     try {
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: `حلل التحيز التحريري لهذه العناوين لـ MetaView: ${JSON.stringify(sample)}`,
+        contents: `تحليل التحيز لـ MetaView: ${JSON.stringify(sample)}`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {
