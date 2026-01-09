@@ -1,26 +1,9 @@
 
 import { Article, HealthStatus, SearchParams, SentimentResult, ComparisonResult, TranslationResult } from '../types';
 
-// في بيئة التطوير، يتصل بـ localhost، وفي الإنتاج يتصل بنفس نطاق الخادم
-const BACKEND_URL = ''; 
 const DATA_API_URL = 'https://metaview-api-production.up.railway.app';
 
 export const apiService = {
-  // طلب تحليل شامل من الباكيند الخاص بنا
-  async getFullAnalysis(params: SearchParams) {
-    try {
-      const response = await fetch(`${BACKEND_URL}/analyze`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ source: '/articles', params })
-      });
-      return await response.json();
-    } catch (err) {
-      console.error("Backend Analysis Failed:", err);
-      return null;
-    }
-  },
-
   // جلب البيانات الخام (للعرض السريع)
   async searchText(params: SearchParams): Promise<Article[]> {
     const queryParams = new URLSearchParams();
@@ -38,16 +21,15 @@ export const apiService = {
 
   async getHealth(): Promise<HealthStatus> {
     try {
-      const response = await fetch(`${BACKEND_URL}/health`);
+      const response = await fetch(`/api/health`);
       return await response.json();
     } catch {
       return { status: 'offline', rows: 0 };
     }
   },
 
-  // Fix: Added missing method used by ComparisonDrawer
   async compareArticles(h1: string, h2: string): Promise<ComparisonResult> {
-    const response = await fetch(`${BACKEND_URL}/compare`, {
+    const response = await fetch(`/api/compare`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ h1, h2 })
@@ -55,9 +37,8 @@ export const apiService = {
     return await response.json();
   },
 
-  // Fix: Added missing method used by Explore
   async clusterArticles(articles: Article[]) {
-    const response = await fetch(`${BACKEND_URL}/cluster`, {
+    const response = await fetch(`/api/cluster`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ articles })
@@ -65,9 +46,8 @@ export const apiService = {
     return await response.json();
   },
 
-  // Fix: Added missing method used by Dashboard
   async getStrategicSummary(articles: Article[]) {
-    const response = await fetch(`${BACKEND_URL}/strategic-summary`, {
+    const response = await fetch(`/api/strategic-summary`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ articles })
@@ -75,9 +55,8 @@ export const apiService = {
     return await response.json();
   },
 
-  // Fix: Added missing method used by Dashboard
   async detectEditorialBias(articles: Article[]) {
-    const response = await fetch(`${BACKEND_URL}/detect-bias`, {
+    const response = await fetch(`/api/detect-bias`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ articles })
@@ -85,9 +64,8 @@ export const apiService = {
     return await response.json();
   },
 
-  // Fix: Added missing method used by ArticleDetail
   async translateText(text: string, lang: string): Promise<TranslationResult> {
-    const response = await fetch(`${BACKEND_URL}/translate`, {
+    const response = await fetch(`/api/translate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text, lang })
@@ -95,9 +73,8 @@ export const apiService = {
     return await response.json();
   },
 
-  // Fix: Added missing method used by ArticleDetail
   async analyzeSentiment(text: string): Promise<SentimentResult> {
-    const response = await fetch(`${BACKEND_URL}/sentiment`, {
+    const response = await fetch(`/api/sentiment`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text })
