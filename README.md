@@ -1,39 +1,32 @@
 
-# MetaView Strategic Intelligence Hub (Production)
+# MetaView Strategic Intelligence Hub (Production Ready)
 
-منصة استخبارات بيانات استراتيجية مدعومة بـ Gemini، جاهزة للنشر الفوري.
+منصة استخبارات بيانات استراتيجية مدعومة بـ Gemini، جاهزة للنشر الفوري على Railway.
 
-## المميزات
-- **Frontend:** React 18 + Vite + Tailwind.
-- **Backend:** Express + Node.js (TypeScript).
-- **AI:** خط معالجة متكامل (Sentiment, Bias, Summarization, Clustering).
-- **Deployment:** جاهز للنشر على Railway بضغطة واحدة.
+## الميزات الجديدة
+1. **Unified Analytics Engine:** نقطة نهاية `/analyze` واحدة تجلب البيانات، تحلل المشاعر، تقيس التحيز، وتولد بيانات الرسوم البيانية.
+2. **Smart Event Aggregation:** نظام تجميع الأحداث الذكي الذي يجمع الأخبار المرتبطة في كتل موضوعية مع قياس "الزخم" (Momentum Score).
+3. **Auto-Translation:** كافة مخرجات الذكاء الاصطناعي معربة بالكامل (Modern Standard Arabic).
+4. **Resilient UI:** لوحة تحكم مدعومة بـ Recharts مع معالجة ذكية لحالات نقص البيانات.
 
-## التشغيل المحلي (Local Development)
+## المتطلبات (Environment Variables)
+- `API_KEY`: مفتاح Google Gemini الخاص بك.
+- `EXTERNAL_API_URL`: الرابط الأساسي لجلب البيانات (افتراضي: MetaView production API).
+- `PORT`: المنفذ (يتم تعيينه تلقائياً بواسطة Railway).
 
-1. تثبيت المكتبات:
-   ```bash
-   npm install
-   ```
+## نقاط النهاية (API Endpoints)
 
-2. إعداد المتغيرات (`.env`):
-   ```env
-   API_KEY=your_gemini_key
-   EXTERNAL_API_URL=https://metaview-api-production.up.railway.app
-   PORT=3000
-   ```
+### `POST /api/analyze`
+المحرك الرئيسي للوحة التحكم.
+- **Input:** `{ "lang": "ar", "params": { "top_k": 30 } }`
+- **Output:** كائن يحتوي على `dashboard`, `sentiment`, `bias`, و `articles`.
 
-3. تشغيل بيئة التطوير (في نافذتين):
-   - واجهة المستخدم: `npm run dev:frontend`
-   - الخادم: `npm run dev:backend`
+### `POST /api/cluster`
+محرك تجميع الأحداث.
+- **Input:** `{ "articles": [...], "lang": "ar" }`
+- **Output:** قائمة بمجموعات الأحداث الذكية.
 
 ## النشر على Railway
-
 1. اربط المستودع بـ Railway.
-2. أضف المتغيرات `API_KEY` و `EXTERNAL_API_URL`.
-3. سيقوم Railway بتشغيل `npm run build` ثم `npm start` تلقائياً.
-
-## هيكلية الملفات المحدثة
-- `dist/`: يحتوي على ملفات الواجهة الأمامية المبنية (Static Assets).
-- `server.ts`: الخادم الموحد الذي يقدم الـ API والملفات الساكنة.
-- `vite.config.ts`: نظام البناء الحديث.
+2. أضف `API_KEY`.
+3. سيقوم النظام تلقائياً بـ `npm run build` ثم `npm start`.
