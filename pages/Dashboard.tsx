@@ -3,15 +3,14 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
   RefreshCw, Shield, Radar as RadarIcon, 
   PieChart as PieIcon, Activity, 
-  TrendingUp, Zap, Landmark, Radio, Database, BrainCircuit, Wind
+  Zap, Database, BrainCircuit, Landmark
 } from 'lucide-react';
 import { apiService } from '../services/apiService';
 import { Article } from '../types';
 import { 
-  XAxis, YAxis, Tooltip as ReTooltip, 
+  Tooltip as ReTooltip, 
   ResponsiveContainer, Cell, PieChart, Pie, 
-  Radar as ReRadar, RadarChart, PolarGrid, PolarAngleAxis,
-  AreaChart, Area, CartesianGrid
+  Radar as ReRadar, RadarChart, PolarGrid, PolarAngleAxis
 } from 'recharts';
 
 const Dashboard: React.FC = () => {
@@ -31,13 +30,13 @@ const Dashboard: React.FC = () => {
   const fetchFullIntelligence = async () => {
     setLoading(true);
     try {
-      const results = await apiService.searchText({ top_k: 200 });
+      const results = await apiService.searchText({ top_k: 100 });
       setArticles(results);
 
       setIsAnalyzing(true);
       const [strat, bias] = await Promise.all([
-        apiService.getStrategicSummary(results.slice(0, 50)),
-        apiService.detectEditorialBias(results.slice(0, 20))
+        apiService.getStrategicSummary(results.slice(0, 40)),
+        apiService.detectEditorialBias(results.slice(0, 15))
       ]);
 
       setStrategicData(strat);
@@ -55,11 +54,8 @@ const Dashboard: React.FC = () => {
   }, []);
 
   const analytics = useMemo(() => {
-    if (articles.length === 0) return { sentimentData: [], averageBias: 0, momentumData: [] };
-    
     const sentimentDistribution = { positive: 0, neutral: 0, negative: 0 };
     articles.forEach(art => {
-      const text = (art.headline + ' ' + (art.article_summary || '')).toLowerCase();
       let sentiment = art.sentiment_label || 'neutral';
       sentimentDistribution[sentiment as keyof typeof sentimentDistribution]++;
     });
@@ -72,7 +68,7 @@ const Dashboard: React.FC = () => {
 
     const averageBias = biasData.length > 0 
       ? Math.round(biasData.reduce((acc, curr) => acc + curr.bias_score, 0) / biasData.length)
-      : 45;
+      : 50;
 
     return { sentimentData, averageBias };
   }, [articles, biasData]);
@@ -83,14 +79,12 @@ const Dashboard: React.FC = () => {
         <div className="w-24 h-24 border-b-2 border-saudi-gold rounded-full animate-spin"></div>
         <Landmark className="w-10 h-10 text-saudi-gold absolute inset-0 m-auto animate-pulse" />
       </div>
-      <p className="text-[11px] font-black text-saudi-gold tracking-[0.4em] uppercase">MetaView Intelligence Analyzing...</p>
+      <p className="text-[11px] font-black text-saudi-gold tracking-[0.4em] uppercase">MetaView AI Initializing...</p>
     </div>
   );
 
   return (
     <div className="max-w-[1536px] mx-auto space-y-12 pb-40 px-6 pt-8 font-['Cairo']">
-      
-      {/* HEADER SECTION */}
       <div className="flex flex-col lg:flex-row items-center justify-between gap-10 border-b border-white/5 pb-12">
         <div className="flex items-center gap-8">
           <div className="w-20 h-20 bg-saudi-gold/10 rounded-[1.5rem] flex items-center justify-center border border-saudi-gold/20 shadow-2xl">
@@ -101,10 +95,10 @@ const Dashboard: React.FC = () => {
             <div className="flex items-center gap-5">
                <span className="text-[10px] font-black text-emerald-500 px-4 py-1.5 bg-emerald-500/10 rounded-full border border-emerald-500/20 flex items-center gap-2 uppercase tracking-widest">
                   <div className="w-2 h-2 bg-emerald-500 rounded-full animate-ping"></div>
-                  نظام MetaView نشط
+                  AI Core Active
                </span>
                <span className="text-slate-500 text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
-                 <Database className="w-4 h-4 opacity-40" /> {articles.length.toLocaleString()} سجل إخباري
+                 <Database className="w-4 h-4 opacity-40" /> {articles.length.toLocaleString()} سجل
                </span>
             </div>
           </div>
@@ -114,11 +108,10 @@ const Dashboard: React.FC = () => {
           disabled={isAnalyzing}
           className="flex items-center gap-3 px-10 py-5 bg-saudi-gold text-black rounded-2xl font-black text-[11px] uppercase tracking-widest hover:brightness-110 transition-all shadow-2xl active:scale-95 disabled:opacity-50"
         >
-           <RefreshCw className={`w-4 h-4 ${isAnalyzing ? 'animate-spin' : ''}`} /> تحديث التحليلات الذكية
+           <RefreshCw className={`w-4 h-4 ${isAnalyzing ? 'animate-spin' : ''}`} /> تحديث التحليلات
         </button>
       </div>
 
-      {/* TOP BRIEFING: AI Analysis */}
       <section className="official-card rounded-[3.5rem] overflow-hidden border-none shadow-2xl">
          <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[450px]">
             <div className="lg:col-span-8 p-14 bg-[#050505] space-y-10 border-l border-white/5">
@@ -126,14 +119,11 @@ const Dashboard: React.FC = () => {
                   <div className="p-4 bg-saudi-gold/10 rounded-2xl">
                     <Shield className="w-8 h-8 text-saudi-gold" />
                   </div>
-                  <div>
-                    <h2 className="text-3xl font-black text-saudi-gold uppercase tracking-tighter">الموجز الاستراتيجي</h2>
-                    <p className="text-[10px] font-black text-slate-500 tracking-[0.2em] uppercase mt-1">AI Generated Briefing</p>
-                  </div>
+                  <h2 className="text-3xl font-black text-saudi-gold uppercase tracking-tighter">الموجز الاستراتيجي الذكي</h2>
                </div>
                <div className="p-10 bg-black rounded-[2.5rem] border border-white/5">
                   <p className="text-2xl font-medium text-slate-200 leading-relaxed italic">
-                    "{strategicData.summary || 'يتم حالياً استخلاص الرؤية من محرك MetaView المركزي...'}"
+                    "{strategicData.summary || 'جاري استخراج الرؤية الاستراتيجية...'}"
                   </p>
                </div>
                <div className="flex flex-wrap gap-5">
@@ -150,39 +140,28 @@ const Dashboard: React.FC = () => {
                <div className="relative mb-10 w-56 h-56">
                   <svg className="w-full h-full transform -rotate-90" viewBox="0 0 200 200">
                     <circle cx="100" cy="100" r={radius} stroke="currentColor" strokeWidth="20" fill="transparent" className="text-zinc-900" />
-                    <circle cx="100" cy="100" r={radius} stroke="#C5A059" strokeWidth="20" fill="transparent" strokeDasharray={circumference} strokeDashoffset={circumference - (circumference * analytics.averageBias) / 100} strokeLinecap="round" className="transition-all duration-1000 shadow-[0_0_20px_rgba(197,160,89,0.3)]" />
+                    <circle cx="100" cy="100" r={radius} stroke="#C5A059" strokeWidth="20" fill="transparent" strokeDasharray={circumference} strokeDashoffset={circumference - (circumference * analytics.averageBias) / 100} strokeLinecap="round" className="transition-all duration-1000" />
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
                      <span className="text-6xl font-black text-saudi-gold tracking-tighter">{analytics.averageBias}%</span>
                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">مؤشر التحيز</span>
                   </div>
                </div>
-               <div className="space-y-2">
-                 <h4 className="font-black text-slate-200 text-2xl tracking-tight">رادار النزاهة التحريرية</h4>
-                 <p className="text-[11px] font-bold text-slate-500 uppercase tracking-[0.3em] opacity-40">Editorial Bias Monitor</p>
-               </div>
+               <h4 className="font-black text-slate-200 text-2xl">رادار النزاهة التحريرية</h4>
             </div>
          </div>
       </section>
 
-      {/* CORE ANALYTICS */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-        
-        {/* Radar Chart: Strategic Pillars */}
         <div className="lg:col-span-8 official-card p-14 rounded-[3.5rem] flex flex-col min-h-[550px] bg-black">
            <div className="flex items-center gap-6 mb-16">
-              <div className="w-14 h-14 bg-saudi-gold/10 rounded-2xl flex items-center justify-center">
-                 <RadarIcon className="w-8 h-8 text-saudi-gold" />
-              </div>
-              <div>
-                 <h3 className="text-lg font-black text-white uppercase tracking-widest">أركان التأثير الاستراتيجي</h3>
-                 <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.3em] mt-1">Strategic Pillar Intensity</p>
-              </div>
+              <RadarIcon className="w-8 h-8 text-saudi-gold" />
+              <h3 className="text-lg font-black text-white uppercase tracking-widest">أركان التأثير الاستراتيجي</h3>
            </div>
            <div className="flex-1 w-full min-h-[350px]">
               <ResponsiveContainer width="100%" height="100%">
                  <RadarChart cx="50%" cy="50%" outerRadius="80%" data={strategicData.metrics.length > 0 ? strategicData.metrics : [
-                   {category: 'الاستقرار', value: 80}, {category: 'الاقتصاد', value: 70}, {category: 'الأمن', value: 90}, {category: 'التقنية', value: 60}, {category: 'التأثير', value: 75}
+                   {category: 'الاستقرار', value: 50}, {category: 'الاقتصاد', value: 50}, {category: 'الأمن', value: 50}, {category: 'التقنية', value: 50}
                  ]}>
                     <PolarGrid stroke="#ffffff11" />
                     <PolarAngleAxis dataKey="category" tick={{fill: '#94a3b8', fontSize: 14, fontWeight: 'bold'}} />
@@ -193,14 +172,10 @@ const Dashboard: React.FC = () => {
            </div>
         </div>
 
-        {/* Sentiment Analysis */}
         <div className="lg:col-span-4 official-card p-14 rounded-[3.5rem] flex flex-col min-h-[550px] bg-black">
            <div className="flex flex-col items-center text-center space-y-4 mb-14">
-              <div className="w-16 h-16 bg-emerald-500/10 rounded-2xl flex items-center justify-center">
-                 <PieIcon className="w-8 h-8 text-emerald-500" />
-              </div>
+              <PieIcon className="w-8 h-8 text-emerald-500" />
               <h3 className="text-lg font-black text-white uppercase tracking-widest">توزع المشاعر العامة</h3>
-              <p className="text-[10px] font-black text-slate-500 tracking-[0.2em] uppercase">Sentiment Pulse</p>
            </div>
            <div className="flex-1 relative flex items-center justify-center min-h-[250px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -222,20 +197,8 @@ const Dashboard: React.FC = () => {
               </ResponsiveContainer>
               <div className="absolute flex flex-col items-center pointer-events-none">
                  <Activity className="w-8 h-8 text-saudi-gold mb-2" />
-                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">الحالة</span>
-                 <span className="text-2xl font-black text-white uppercase tracking-tighter">مستقر</span>
+                 <span className="text-2xl font-black text-white">مستقر</span>
               </div>
-           </div>
-           <div className="grid grid-cols-1 gap-3 mt-12">
-              {analytics.sentimentData.map(d => (
-                <div key={d.name} className="flex items-center justify-between p-4 bg-white/[0.03] rounded-2xl border border-white/5">
-                   <div className="flex items-center gap-3">
-                      <div className="w-2.5 h-2.5 rounded-full" style={{backgroundColor: d.color}}></div>
-                      <span className="text-xs font-black text-slate-400 uppercase">{d.name}</span>
-                   </div>
-                   <span className="text-sm font-black text-white">{d.value}</span>
-                </div>
-              ))}
            </div>
         </div>
       </div>
